@@ -1,0 +1,206 @@
+---
+title: "Students"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/Desktop/R")
+library(dplyr)
+library(ggplot2)
+library(leaps)
+library(car)
+```
+
+```{r}
+
+
+students=read.csv("student-mat.csv",sep=";",header=TRUE)
+
+students$age=as.numeric(students$age)
+students$traveltime=as.numeric(students$traveltime)
+students$studytime=as.numeric(students$studytime)
+students$freetime=as.numeric(students$freetime)
+students$goout=as.numeric(students$goout)
+students$Dalc=as.numeric(students$Dalc)
+students$Walc=as.numeric(students$Walc)
+students$health=as.numeric(students$health)
+students$absences=as.numeric(students$absences)
+students$G1=as.numeric(students$G1)
+students$G2=as.numeric(students$G2)
+students$G3=as.numeric(students$G3)
+students$famrel=as.numeric(students$famrel)
+students$failures=as.numeric(students$failures)
+#str(students)
+
+
+```
+
+
+
+```{r}
+best.subset=regsubsets(G3~.,students,nvmax =10)
+sum=summary(best.subset)
+sum$outmat
+
+```
+```{r}
+
+null = lm(G3~1, data = students)
+full = lm(G3~., data = students) 
+
+step(null, scope=list(lower=null, upper=full),direction="forward")
+
+```
+
+```{r}
+reg=lm(formula = G3 ~ G2 + famrel + absences + G1 + age + activities + Walc + romantic + school, data = students)
+summary(reg)
+
+students2=cbind(students,reg$residuals,reg$fitted.values)
+
+students2%>%
+  ggplot(aes(x=reg$fitted.values, y=reg$residuals))+
+  geom_point()
+
+shapiro.test(reg$residuals) #test if normal distribution (if under 100 data points) You want a high p value, you want to fail to reject the null
+hist(reg$residuals)
+ncvTest(reg)
+qqnorm(reg$residuals)
+```
+
+
+
+```{r}
+reg2=lm(formula = G3 ~ G2 + famrel + absences + G1 + age, data=students)
+summary(reg2)
+```
+```{r}
+students2=students%>%
+  select(G3, G2 , famrel ,absences , G1 , age)
+
+students2=cbind(students2,reg2$residuals,reg2$fitted.values)
+
+hist(reg2$residuals)
+
+students2%>%
+  ggplot(aes(x=reg2$fitted.values, y=reg2$residuals))+
+  geom_point()
+
+shapiro.test(reg2$residuals) #test if normal distribution (if under 100 data points) You want a high p value, you want to fail to reject the null
+
+ncvTest(reg2)
+qqnorm(reg2$residuals)
+
+```
+
+```{r}
+students3=students%>%
+  mutate(logfinal=log(G3+1))
+
+students3=students3%>%
+  select(school:G2, logfinal)
+
+
+best.subset=regsubsets(logfinal~.,students3,nvmax =10)
+sum=summary(best.subset)
+sum$outmat
+
+null = lm(logfinal~1, data = students3)
+full = lm(logfinal~., data = students3) 
+
+step(null, scope=list(lower=null, upper=full),direction="forward")
+```
+
+```{r}
+reg=lm(logfinal ~ G2+ absences + paid + school + 
+    schoolsup + Walc + failures + internet + age + higher + Medu, 
+    data = students3)
+summary(reg)
+
+```
+
+```{r}
+
+students3=cbind(students3,reg$residuals,reg$fitted.values)
+
+hist(reg$residuals)
+ 
+
+students2%>%
+  ggplot(aes(x=reg$fitted.values, y=reg$residuals))+
+  geom_point()
+
+shapiro.test(reg$residuals) #test if normal distribution (if under 100 data points) You want a high p value, you want to fail to reject the null
+
+ncvTest(reg)
+qqnorm(reg$residuals)
+
+```
+```{r}
+reg=lm(formula = logfinal ~ G2 + famrel + absences + G1 + age, data=students3)
+summary(reg)
+```
+
+```{r}
+hist(reg$residuals)
+ 
+
+students3%>%
+  ggplot(aes(x=reg$fitted.values, y=reg$residuals))+
+  geom_point()
+
+
+```
+
+```{r}
+ncvTest(reg)
+qqnorm(reg$residuals)
+
+shapiro.test(reg$residuals) #test if normal distribution (if under 100 data points) You want a high p value, you want to fail to reject the null
+
+
+```
+```{r}
+students4=students%>%
+  mutate(G3cube=G3*G3)
+
+reg=lm(formula = G3cube ~ G2 + famrel + absences + G1 + age, data=students4)
+summary(reg)
+```
+```{r}
+hist(reg$residuals)
+ 
+
+students4%>%
+  ggplot(aes(x=reg$fitted.values, y=reg$residuals))+
+  geom_point()
+
+shapiro.test(reg$residuals) #test if normal distribution (if under 100 data points) You want a high p value, you want to fail to reject the null
+
+ncvTest(reg)
+qqnorm(reg$residuals)
+
+```
+
+```{r}
+mean(students$G3)
+
+mean(students$G2)
+mean(students$famrel)
+mean(students$absences)
+mean(students$G1)
+mean(students$age)
+
+```
+
+```{r}
+-.07765+(.97804*10.71392)+(.35725+3.944304)+(.04365*5.708861)+(.15794*10.90886)+(-.20167*16.6962)
+```
+P. Cortez and A. Silva. Using Data Mining to Predict Secondary School Student Performance. In A. Brito and J. Teixeira Eds., Proceedings of 5th FUture BUsiness TEChnology Conference (FUBUTEC 2008) pp. 5-12, Porto, Portugal, April, 2008, EUROSIS, ISBN 978-9077381-39-7. 
+
